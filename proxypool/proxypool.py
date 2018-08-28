@@ -67,8 +67,6 @@ class ProxyPool(object):
             """
             Returns the failrate of the proxy in the range [0,1).
             """
-            if self.down:
-                return 1.0
             return self.failures / (self.successes + self.failures + 1e-7)
 
         def set_latency(self, t):
@@ -82,12 +80,13 @@ class ProxyPool(object):
             with self.proxypool.lock:
                 self.successes += 1
 
-        def increase_failures(self, immediate=False):
+        def increase_failures(self):
             with self.proxypool.lock:
-                if immediate:
-                    self.down = True
-                else:
-                    self.failures += 1
+                self.failures += 1
+
+        def set_down(self):
+            with self.proxypool.lock:
+                self.down = True
 
     class Decorators(object):
         @classmethod
@@ -111,14 +110,12 @@ class ProxyPool(object):
                         failures += 1
                     else:
                         if r.status_code in [403]:
-                            # Assume url is correct but proxy blacklisted by
-                            # host
                             logger.debug(
                                 "%s: Down due to http status %d" %
                                 (p.url, r.status_code))
                             # The proxy is assumed to be banned, so mark it as
                             # down immediately
-                            p.increase_failures(immediate=True)
+                            p.set_down()
                             failures += 1
                         elif r.status_code in [429, 503]:
                             logger.debug(
@@ -200,7 +197,7 @@ class ProxyPool(object):
         """
         Must be called inside lock
         """
-        return [s for s in self.proxies if s.failrate() < self.max_proxy_failrate]
+        return [s for s in self.proxies if s.failrate() < self.max_proxy_failrate and not s.down]
 
     def get_proxy(self):
         """ Sample a good proxy """
