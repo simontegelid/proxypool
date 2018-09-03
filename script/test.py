@@ -34,4 +34,4 @@ tp.map(pp.get, [((url,), {'headers': headers})
                 for url in urls], result_handler=print_result)
 tp.wait()
 
-print pp
+print(pp)
