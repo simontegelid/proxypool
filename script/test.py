@@ -12,6 +12,7 @@ headers = {
 pp = proxypool.ProxyPool(providers=[
     proxypool.providers.SocksProxy(),
     proxypool.providers.SslProxies(),
+    proxypool.providers.GatherProxy(),
 ])
 
 urls = [

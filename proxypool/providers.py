@@ -48,6 +48,24 @@ class SslProxies(ProxyProvider):
         return ps
 
 
+class GatherProxy(ProxyProvider):
+
+    def update(self):
+        ps = set()
+        for i in range(3):
+            r = requests.post(
+                'http://www.gatherproxy.com/proxylist/anonymity/?t=Elite', data={'PageIdx': i + 1,
+                                                                                 'Type': 'Elite',
+                                                                                 'Uptime': 0})
+            t = r.text
+            for m in re.findall(r"<td><script>document\.write\('(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'\)<\/script><\/td>\s*<td><script>document\.write\(gp\.dep\('([0-9A-F]+)'\)\)<\/script><\/td>", t):
+                ip = m[0]
+                port = int(m[1], 16)
+                ps.add('http://%s:%d' % (ip, port))
+
+        return ps
+
+
 class Tor(ProxyProvider):
 
     def update(self):
